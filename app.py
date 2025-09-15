@@ -6,8 +6,18 @@ import asyncio
 from nicegui import app, ui, background_tasks
 from ecowitt_wn90lp.ws90 import WS90Client
 from datetime import datetime
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field
 
-import config
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+
+    DEBUG: bool = False
+    VIDEO_STREAM_URL: str
+
+
+settings = Settings()
 
 data = None
 
@@ -20,7 +30,9 @@ def number_ui() -> None:
 
     ui.label("Wind").classes("text-h3")
     with ui.circular_progress(10, min=0, max=360, show_value=False) as progress:
-        progress.classes("size-72").props(f"angle={data.wind_direction-5} color='red'")
+        progress.classes("size-full").props(
+            f"angle={data.wind_direction-5} color='red'"
+        )
         wind_text = "?"
         if data.wind_speed > 0:
             wind_text = f"{data.wind_direction}˚"
@@ -53,7 +65,7 @@ def main_page() -> None:
                         controls=True,
                         autoplay=True,
                         loop=True,
-                    )
+                    ).classes("w-full aspect-video")
             with ui.element().classes("col-span-4"):
                 with ui.card().classes("w-full"):
                     number_ui()
@@ -80,7 +92,7 @@ async def backgroundRunFFmpeg() -> None:
         "-loglevel",
         "error",
         "-i",
-        config.VIDEO_STREAM_URL,
+        settings.VIDEO_STREAM_URL,
         "-c:v",
         "copy",
         "-an",
@@ -107,11 +119,10 @@ async def backgroundRunFFmpeg() -> None:
             proc.kill()
 
 
-if config.VIDEO_STREAM_URL:
-    app.on_startup(
-        lambda: background_tasks.create_lazy(backgroundRunFFmpeg(), name="ffmpeg")
-    )
+app.on_startup(
+    lambda: background_tasks.create_lazy(backgroundRunFFmpeg(), name="ffmpeg")
+)
 
 ui.timer(1.0, backgroundRefreshData)
 
-ui.run(title="Weather", dark=True)
+ui.run(title="Weather", dark=True, reload=settings.DEBUG, show=settings.DEBUG)
