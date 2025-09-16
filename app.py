@@ -15,6 +15,7 @@ class Settings(BaseSettings):
 
     DEBUG: bool = False
     VIDEO_STREAM_URL: str
+    ECOWITT_WN90LP_PORT: str
 
 
 settings = Settings()
@@ -77,7 +78,7 @@ app.add_static_files("/video", "video")
 async def backgroundRefreshData() -> None:
     global data
 
-    client = WS90Client("/dev/cu.usbserial-110")
+    client = WS90Client(settings.ECOWITT_WN90LP_PORT)
     await client.connect()
     data = await client.read_all()
     client.close()

@@ -17,6 +17,7 @@ Options:
 
 - `DEBUG` - run in debug mode with reloader and browser auto open
 - `VIDEO_STREAM_URL` - video stream URL that will be passed to ffmpeg to convert into HLS format
+- `ECOWITT_WN90LP_PORT` - serial port for Ecowitt wn90lp weather station RS485/Modbus interface
 
 # Running
 
