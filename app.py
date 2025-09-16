@@ -61,6 +61,7 @@ def main_page() -> None:
         with ui.grid(columns=16).classes("w-full"):
             with ui.element().classes("col-span-12"):
                 with ui.card():
+                    ui.label("Currently in the sky").classes("text-h3")
                     ui.video(
                         "/video/stream.m3u8",
                         controls=True,
