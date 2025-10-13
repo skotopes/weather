@@ -11,7 +11,7 @@ from datetime import datetime
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 
-TEXT_HEADER_SIZE = "text-h4"
+HEADER_BIG_SIZE = "text-h4"
 
 
 def degToCompass(num):
@@ -53,22 +53,23 @@ data = None
 @ui.refreshable
 def number_ui() -> None:
     if not data:
-        ui.label("Waiting for data").classes(TEXT_HEADER_SIZE)
+        ui.label("Waiting for data").classes(HEADER_BIG_SIZE)
         return
 
-    ui.label("Wind").classes(TEXT_HEADER_SIZE)
+    ui.label("Wind").classes(HEADER_BIG_SIZE)
     with ui.circular_progress(10, min=0, max=360, show_value=False) as progress:
         progress.classes("size-full").props(
             f"angle={data.wind_direction-5} color='red'"
         )
         wind_text = degToCompass(data.wind_direction)
-        ui.label(wind_text).classes("text-h3")
-        ui.label(f"{data.wind_direction}˚").classes("text-h5")
+        ui.label(wind_text).classes("text-h2")
     ui.markdown(
-        f"Speed: {data.wind_speed}m/s<br>" f"Gust: {data.gust_speed}m/s<br>"
-    ).classes("text-h4")
+        f"Direction: {data.wind_direction}˚<br>"
+        f"Speed: {data.wind_speed}m/s<br>"
+        f"Gust: {data.gust_speed}m/s<br>"
+    ).classes("text-h5")
 
-    ui.label("Other").classes(TEXT_HEADER_SIZE)
+    ui.label("Other").classes(HEADER_BIG_SIZE)
     ui.markdown(
         f"Light: {data.light} lux<br>"
         f"UV Index: {data.uv_index}<br>"
@@ -95,7 +96,7 @@ def main_page() -> None:
         with ui.element().classes("row q-col-gutter-md"):
             with ui.element().classes("col-xs-12 col-lg-9"):
                 with ui.card():
-                    ui.label("Currently in the sky").classes(TEXT_HEADER_SIZE)
+                    ui.label("Currently in the sky").classes(HEADER_BIG_SIZE)
                     with ui.element("video") as video:
                         video.classes("video-js vjs-default-skin w-full vjs-fluid")
                         video.props('autoplay controls preload="auto" data-setup="{}"')
