@@ -1,19 +1,22 @@
 #!/usr/bin/env python3
 
 import os
+import logging
 import asyncio
-
-from fastapi.responses import FileResponse
+from datetime import datetime
 
 from nicegui import app, ui, background_tasks
-from ecowitt_wn90lp.ws90 import WS90Client
-from datetime import datetime
+from fastapi import HTTPException
+from fastapi.responses import FileResponse
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
+from ecowitt_wn90lp.ws90 import WS90Client
 
 from helpers import *
 
 HEADER_BIG_SIZE = "text-h4"
+
+logger = logging.getLogger("weather")
 
 
 class Settings(BaseSettings):
@@ -94,6 +97,9 @@ def main_page() -> None:
 
 @app.get("/video/stream.m3u8")
 def generate_random_number():
+    if not os.path.exists("video/stream.m3u8"):
+        logger.error("Video stream is not ready")
+        raise HTTPException(status_code=503, detail="Not ready")
     return FileResponse(
         "video/stream.m3u8",
         media_type="application/x-mpegurl",
@@ -108,18 +114,28 @@ app.add_static_files("/static", "static")
 async def backgroundRefreshData() -> None:
     global g
 
-    client = WS90Client(settings.ECOWITT_WN90LP_PORT)
-    await client.connect()
-    g.data = await client.read_all()
-    client.close()
-    number_ui.refresh()
+    # check latest data
+    try:
+        client = WS90Client(settings.ECOWITT_WN90LP_PORT)
+        await client.connect()
+        g.data = await client.read_all()
+        client.close()
+        number_ui.refresh()
+    except Exception as e:
+        logger.exception(e)
+        logger.error("Data update failed")
 
-    if os.path.exists("video/stream.m3u8"):
-        video_mtime = os.path.getmtime("video/stream.m3u8")
-        if g.video_mtime and (video_mtime - g.video_mtime) > 60:
-            if g.ffmpeg_process:
-                g.ffmpeg_process.kill()
-        g.video_mtime = video_mtime
+    # check video stream state
+    try:
+        if os.path.exists("video/stream.m3u8"):
+            video_mtime = os.path.getmtime("video/stream.m3u8")
+            if g.video_mtime and (video_mtime - g.video_mtime) > 60:
+                if g.ffmpeg_process:
+                    g.ffmpeg_process.kill()
+            g.video_mtime = video_mtime
+    except Exception as e:
+        logger.exception(e)
+        logger.error("Video stream check failed")
 
 
 app.timer(1.0, backgroundRefreshData)
@@ -150,13 +166,15 @@ async def backgroundRunFFmpeg() -> None:
         "delete_segments",
         "video/stream.m3u8",
     ]
-    g.ffmpeg_process = None
+
     try:
         while True:
             os.system("rm video/*")
             g.ffmpeg_process = await asyncio.create_subprocess_exec(*cmd)
             await g.ffmpeg_process.wait()
             await asyncio.sleep(1)
+    except Exception as e:
+        logger.exception(e)
     finally:
         if g.ffmpeg_process:
             g.ffmpeg_process.kill()
