@@ -11,30 +11,9 @@ from datetime import datetime
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 
+from helpers import *
+
 HEADER_BIG_SIZE = "text-h4"
-
-
-def degToCompass(num):
-    val = int((num / 22.5) + 0.5)
-    arr = [
-        "N",
-        "NNE",
-        "NE",
-        "ENE",
-        "E",
-        "ESE",
-        "SE",
-        "SSE",
-        "S",
-        "SSW",
-        "SW",
-        "WSW",
-        "W",
-        "WNW",
-        "NW",
-        "NNW",
-    ]
-    return arr[(val % 16)]
 
 
 class Settings(BaseSettings):
@@ -47,36 +26,43 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-data = None
+
+class GlobalState:
+    data = None
+    ffmpeg_process = None
+    video_mtime = None
+
+
+g = GlobalState()
 
 
 @ui.refreshable
 def number_ui() -> None:
-    if not data:
+    if not g.data:
         ui.label("Waiting for data").classes(HEADER_BIG_SIZE)
         return
 
+    wind_text = degToCompass(g.data.wind_direction)
     ui.label("Wind").classes(HEADER_BIG_SIZE)
     with ui.circular_progress(10, min=0, max=360, show_value=False) as progress:
         progress.classes("size-full").props(
-            f"angle={data.wind_direction-5} color='red'"
+            f"angle={g.data.wind_direction-5} color='red'"
         )
-        wind_text = degToCompass(data.wind_direction)
         ui.label(wind_text).classes("text-h2")
     ui.markdown(
-        f"Direction: {data.wind_direction}˚<br>"
-        f"Speed: {data.wind_speed}m/s<br>"
-        f"Gust: {data.gust_speed}m/s<br>"
+        f"Direction: {g.data.wind_direction}˚ ({wind_text})<br>"
+        f"Speed: {g.data.wind_speed}m/s<br>"
+        f"Gust: {g.data.gust_speed}m/s<br>"
     ).classes("text-h5")
 
     ui.label("Other").classes(HEADER_BIG_SIZE)
     ui.markdown(
-        f"Light: {data.light} lux<br>"
-        f"UV Index: {data.uv_index}<br>"
-        f"Temperature: {data.temperature}˚C<br>"
-        f"Humidity: {data.humidity}%<br>"
-        f"Rainfall: {data.rainfall}<br>"
-        f"Pressure: {data.pressure_abs/100} hPa"
+        f"Light: {g.data.light} lux ({luxToWatt(g.data.light)} W)<br>"
+        f"UV Index: {g.data.uv_index}<br>"
+        f"Temperature: {g.data.temperature}˚C<br>"
+        f"Humidity: {g.data.humidity}%<br>"
+        f"Rainfall: {g.data.rainfall}<br>"
+        f"Pressure: {g.data.pressure_abs/100} hPa"
     ).classes("text-h5")
 
     ui.label(f"Last Updated: {datetime.now().strftime('%a %d %b %Y, %H:%M:%S')}")
@@ -120,17 +106,28 @@ app.add_static_files("/static", "static")
 
 
 async def backgroundRefreshData() -> None:
-    global data
+    global g
 
     client = WS90Client(settings.ECOWITT_WN90LP_PORT)
     await client.connect()
-    data = await client.read_all()
+    g.data = await client.read_all()
     client.close()
     number_ui.refresh()
 
+    if os.path.exists("video/stream.m3u8"):
+        video_mtime = os.path.getmtime("video/stream.m3u8")
+        if g.video_mtime and (video_mtime - g.video_mtime) > 60:
+            if g.ffmpeg_process:
+                g.ffmpeg_process.kill()
+        g.video_mtime = video_mtime
+
+
+app.timer(1.0, backgroundRefreshData)
+
 
 async def backgroundRunFFmpeg() -> None:
-    os.system("rm video/*")
+    global g
+
     cmd = [
         "ffmpeg",
         "-nostats",
@@ -153,21 +150,21 @@ async def backgroundRunFFmpeg() -> None:
         "delete_segments",
         "video/stream.m3u8",
     ]
-    proc = None
+    g.ffmpeg_process = None
     try:
         while True:
-            proc = await asyncio.create_subprocess_exec(*cmd)
-            await proc.wait()
+            os.system("rm video/*")
+            g.ffmpeg_process = await asyncio.create_subprocess_exec(*cmd)
+            await g.ffmpeg_process.wait()
             await asyncio.sleep(1)
     finally:
-        if proc:
-            proc.kill()
+        if g.ffmpeg_process:
+            g.ffmpeg_process.kill()
 
 
 app.on_startup(
     lambda: background_tasks.create_lazy(backgroundRunFFmpeg(), name="ffmpeg")
 )
 
-ui.timer(1.0, backgroundRefreshData)
 
 ui.run(title="Weather", dark=True, reload=settings.DEBUG, show=settings.DEBUG)
