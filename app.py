@@ -33,7 +33,6 @@ settings = Settings()
 class GlobalState:
     data = None
     ffmpeg_process = None
-    video_mtime = None
 
 
 g = GlobalState()
@@ -129,10 +128,10 @@ async def backgroundRefreshData() -> None:
     try:
         if os.path.exists("video/stream.m3u8"):
             video_mtime = os.path.getmtime("video/stream.m3u8")
-            if g.video_mtime and (video_mtime - g.video_mtime) > 60:
-                if g.ffmpeg_process:
-                    g.ffmpeg_process.kill()
-            g.video_mtime = video_mtime
+            now_mtime = datetime.now().timestamp()
+            if now_mtime - video_mtime > 60 and g.ffmpeg_process:
+                logger.error("Stale stream capture detected, killing ffmpeg")
+                g.ffmpeg_process.kill()
     except Exception as e:
         logger.exception(e)
         logger.error("Video stream check failed")
