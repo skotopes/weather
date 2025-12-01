@@ -106,6 +106,14 @@ def generate_random_number():
     )
 
 
+@app.get("/api/data")
+def api_data():
+    if not g.data:
+        logger.error("Data stream is not ready")
+        raise HTTPException(status_code=503, detail="Not ready")
+    return JSONResponse(content=g.data)
+
+
 app.add_static_files("/video", "video")
 app.add_static_files("/static", "static")
 
