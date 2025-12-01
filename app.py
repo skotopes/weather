@@ -12,7 +12,6 @@ from fastapi.responses import FileResponse, JSONResponse
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
-from ecowitt_wn90lp.ws90 import WS90Client
 
 from helpers import *
 
@@ -46,27 +45,27 @@ def number_ui() -> None:
         ui.label("Waiting for data").classes(HEADER_BIG_SIZE)
         return
 
-    wind_text = degToCompass(g.data.wind_direction)
+    wind_text = degToCompass(g.data["wind_direction"])
     ui.label("Wind").classes(HEADER_BIG_SIZE)
     with ui.circular_progress(10, min=0, max=360, show_value=False) as progress:
         progress.classes("size-full").props(
-            f"angle={g.data.wind_direction-5} color='red'"
+            f"angle={g.data["wind_direction"]-5} color='red'"
         )
         ui.label(wind_text).classes("text-h2")
     ui.markdown(
-        f"Direction: {g.data.wind_direction}˚ ({wind_text})<br>"
-        f"Speed: {g.data.wind_speed}m/s<br>"
-        f"Gust: {g.data.gust_speed}m/s<br>"
+        f"Direction: {g.data["wind_direction"]}˚ ({wind_text})<br>"
+        f"Speed: {g.data["wind_speed"]}m/s<br>"
+        f"Gust: {g.data["gust_speed"]}m/s<br>"
     ).classes("text-h5")
 
     ui.label("Other").classes(HEADER_BIG_SIZE)
     ui.markdown(
-        f"Light: {g.data.light} lux ({luxToWatt(g.data.light)} W)<br>"
-        f"UV Index: {g.data.uv_index}<br>"
-        f"Temperature: {g.data.temperature}˚C<br>"
-        f"Humidity: {g.data.humidity}%<br>"
-        f"Rainfall: {g.data.rainfall}<br>"
-        f"Pressure: {g.data.pressure_abs/100} hPa"
+        f"Light: {g.data["light"]} lux ({luxToWatt(g.data["light"])} W)<br>"
+        f"UV Index: {g.data["uv_index"]}<br>"
+        f"Temperature: {g.data["temperature"]}˚C<br>"
+        f"Humidity: {g.data["humidity"]}%<br>"
+        f"Rainfall: {g.data["rainfall"]}<br>"
+        f"Pressure: {g.data["pressure_abs"]/100} hPa"
     ).classes("text-h5")
 
     ui.label(f"Last Updated: {datetime.now().strftime('%a %d %b %Y, %H:%M:%S')}")
@@ -125,10 +124,7 @@ async def backgroundRefreshData() -> None:
 
     # check latest data
     try:
-        client = WS90Client(settings.ECOWITT_WN90LP_PORT)
-        await client.connect()
-        g.data = await client.read_all()
-        client.close()
+        g.data = await getWeatherData(settings.ECOWITT_WN90LP_PORT)
         number_ui.refresh()
     except Exception as e:
         logger.exception(e)
