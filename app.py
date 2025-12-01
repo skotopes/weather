@@ -49,23 +49,23 @@ def number_ui() -> None:
     ui.label("Wind").classes(HEADER_BIG_SIZE)
     with ui.circular_progress(10, min=0, max=360, show_value=False) as progress:
         progress.classes("size-full").props(
-            f"angle={g.data["wind_direction"]-5} color='red'"
+            f"angle={g.data['wind_direction']-5} color='red'"
         )
         ui.label(wind_text).classes("text-h2")
     ui.markdown(
-        f"Direction: {g.data["wind_direction"]}˚ ({wind_text})<br>"
-        f"Speed: {g.data["wind_speed"]}m/s<br>"
-        f"Gust: {g.data["gust_speed"]}m/s<br>"
+        f"Direction: {g.data['wind_direction']}˚ ({wind_text})<br>"
+        f"Speed: {g.data['wind_speed']}m/s<br>"
+        f"Gust: {g.data['gust_speed']}m/s<br>"
     ).classes("text-h5")
 
     ui.label("Other").classes(HEADER_BIG_SIZE)
     ui.markdown(
-        f"Light: {g.data["light"]} lux ({luxToWatt(g.data["light"])} W)<br>"
-        f"UV Index: {g.data["uv_index"]}<br>"
-        f"Temperature: {g.data["temperature"]}˚C<br>"
-        f"Humidity: {g.data["humidity"]}%<br>"
-        f"Rainfall: {g.data["rainfall"]}<br>"
-        f"Pressure: {g.data["pressure_abs"]/100} hPa"
+        f"Light: {g.data['light']} lux ({luxToWatt(g.data['light'])} W)<br>"
+        f"UV Index: {g.data['uv_index']}<br>"
+        f"Temperature: {g.data['temperature']}˚C<br>"
+        f"Humidity: {g.data['humidity']}%<br>"
+        f"Rainfall: {g.data['rainfall']}<br>"
+        f"Pressure: {g.data['pressure_abs']/100} hPa"
     ).classes("text-h5")
 
     ui.label(f"Last Updated: {datetime.now().strftime('%a %d %b %Y, %H:%M:%S')}")
