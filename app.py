@@ -3,11 +3,13 @@
 import os
 import logging
 import asyncio
+
 from datetime import datetime
 
 from nicegui import app, ui, background_tasks
 from fastapi import HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 from ecowitt_wn90lp.ws90 import WS90Client
