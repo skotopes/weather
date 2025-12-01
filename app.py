@@ -16,6 +16,7 @@ from pydantic import Field
 from helpers import *
 
 HEADER_BIG_SIZE = "text-h4"
+VIDEO_STREAM_M3U8 = "video/stream.m3u8"
 
 logger = logging.getLogger("weather")
 
@@ -48,7 +49,7 @@ def number_ui() -> None:
     wind_text = degToCompass(g.data["wind_direction"])
     ui.label("Wind").classes(HEADER_BIG_SIZE)
     with ui.circular_progress(10, min=0, max=360, show_value=False) as progress:
-        progress.classes("size-full").props(
+        progress.classes("self-center lg:size-full size-1/2").props(
             f"angle={g.data['wind_direction']-5} color='red'"
         )
         ui.label(wind_text).classes("text-h2")
@@ -83,25 +84,25 @@ def main_page() -> None:
 
     with ui.element().classes("container mx-auto"):
         with ui.element().classes("row q-col-gutter-md"):
-            with ui.element().classes("col-xs-12 col-lg-9"):
+            with ui.element().classes("col-xs-12 col-md-8 col-lg-9"):
                 with ui.card():
                     ui.label("Currently in the sky").classes(HEADER_BIG_SIZE)
                     with ui.element("video") as video:
                         video.classes("video-js vjs-default-skin w-full vjs-fluid")
                         video.props('autoplay controls preload="auto" data-setup="{}"')
-                        ui.element("source").props('src="/video/stream.m3u8"')
-            with ui.element().classes("col-xs-12 col-lg-3"):
+                        ui.element("source").props(f'src="{VIDEO_STREAM_M3U8}"')
+            with ui.element().classes("col-xs-12 col-md-4 col-lg-3"):
                 with ui.card().classes("w-full"):
                     number_ui()
 
 
 @app.get("/video/stream.m3u8")
 def generate_random_number():
-    if not os.path.exists("video/stream.m3u8"):
+    if not os.path.exists(VIDEO_STREAM_M3U8):
         logger.error("Video stream is not ready")
         raise HTTPException(status_code=503, detail="Not ready")
     return FileResponse(
-        "video/stream.m3u8",
+        VIDEO_STREAM_M3U8,
         media_type="application/x-mpegurl",
         headers={"Cache-Control": "no-cache"},
     )
@@ -132,8 +133,8 @@ async def backgroundRefreshData() -> None:
 
     # check video stream state
     try:
-        if os.path.exists("video/stream.m3u8"):
-            video_mtime = os.path.getmtime("video/stream.m3u8")
+        if os.path.exists(VIDEO_STREAM_M3U8):
+            video_mtime = os.path.getmtime(VIDEO_STREAM_M3U8)
             now_mtime = datetime.now().timestamp()
             if now_mtime - video_mtime > 60 and g.ffmpeg_process:
                 logger.error("Stale stream capture detected, killing ffmpeg")
@@ -169,7 +170,7 @@ async def backgroundRunFFmpeg() -> None:
         "mpegts",
         "-hls_flags",
         "delete_segments",
-        "video/stream.m3u8",
+        VIDEO_STREAM_M3U8,
     ]
 
     try:
