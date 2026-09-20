@@ -93,7 +93,7 @@ class WS90Client:
     def _process_light(self, value: int) -> int:
         if value == 0xFFFF:
             self.logger.error(f"Invalid light reading {value}")
-            return None
+            return 0
         assert 0 <= value and value <= 30_000
         return value * 10
 
@@ -107,7 +107,7 @@ class WS90Client:
     def _process_uv_index(self, value: int) -> float:
         if value == 0xFFFF:
             self.logger.error(f"Invalid UV index reading {value}")
-            return None
+            return 0
         assert 0 <= value and value <= 150
         return value / 10
 
@@ -120,7 +120,7 @@ class WS90Client:
     def _process_temperature(self, value: int) -> float:
         if value == 0xFFFF:
             self.logger.error(f"Invalid temperature reading {value}")
-            return None
+            return 0
         assert 0 <= value and value <= 1000
         return (value - 400) / 10
 
@@ -134,7 +134,7 @@ class WS90Client:
     def _process_humidity(self, value: int) -> int:
         if value == 0xFFFF:
             self.logger.error(f"Invalid humidity reading {value}")
-            return None
+            return 0
         assert 1 <= value and value <= 99
         return value
 
@@ -147,7 +147,7 @@ class WS90Client:
     def _process_wind_speed(self, value: int) -> float:
         if value == 0xFFFF:
             self.logger.error(f"Invalid wind speed reading {value}")
-            return None
+            return 0
         assert 0 <= value and value <= 400
         return value / 10
 
@@ -160,7 +160,7 @@ class WS90Client:
     def _process_gust_speed(self, value: int) -> float:
         if value == 0xFFFF:
             self.logger.error(f"Invalid gust speed reading {value}")
-            return None
+            return 0
         assert 0 <= value and value <= 400
         return value / 10
 
@@ -173,7 +173,7 @@ class WS90Client:
     def _process_wind_direction(self, value: int) -> int:
         if value == 0xFFFF:
             self.logger.error(f"Invalid wind direction reading {value}")
-            return None
+            return 0
         assert 0 <= value and value <= 359
         return value
 
@@ -197,7 +197,7 @@ class WS90Client:
     def _process_pressure_abs(self, value: int) -> int:
         if value == 0xFFFF:
             self.logger.error(f"Invalid absolute pressure reading {value}")
-            return None
+            return 0
         return value * 10
 
     async def read_pressure_abs(self) -> int:
