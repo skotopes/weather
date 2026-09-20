@@ -45,7 +45,7 @@ class WS90Client:
         resp = await self.client.read_holding_registers(
             address=address,
             count=1,
-            slave=self.slave_id,
+            device_id=self.slave_id,
         )
         # pymodbus annotates ModbusReponse.registers as list[Unknown]
         # don't see stubs available or an easy way to resolve this
@@ -55,7 +55,7 @@ class WS90Client:
         resp = await self.client.read_holding_registers(
             address=address,
             count=count,
-            slave=self.slave_id,
+            device_id=self.slave_id,
         )
         # pymodbus annotates ModbusReponse.registers as list[Unknown]
         # don't see stubs available or an easy way to resolve this
@@ -65,7 +65,7 @@ class WS90Client:
         await self.client.write_register(
             address=address,
             value=value,
-            slave=self.slave_id,
+            device_id=self.slave_id,
         )
 
     async def read_device_name(self) -> int:
